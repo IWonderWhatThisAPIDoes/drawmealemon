@@ -1,0 +1,113 @@
+#!/bin/sh
+
+# C compiler
+CC=gcc
+# Output directory (relative to the script)
+OUT=out
+# Name of the directory for Lemon outputs within the output directory
+LEM=lem
+
+# Becomes 1 once a grammar file is set
+HAS_GRAMMAR=0
+# Becomes path to the grammar file
+GRAMMAR=
+# Becomes the list of tokens sent to the parser
+TOKENS=0
+# Becomes the target flag to be forwarded to the renderer once set
+TARGET=
+
+# Directory containing this script
+SCRIPT_DIR=`dirname $0`
+
+# Switch to the script's directory, in case the user calls it from elsewhere
+cd "$SCRIPT_DIR" &&
+
+print_help() {
+    echo "Usage: $0 <grammarFile> [options] -- [tokensToParser]"
+    echo ""
+    echo "Options:"
+    echo "  -h, --help       Print this documentation"
+    echo "  -t, --target     Specify the output format"
+}
+
+# Parse the arguments
+while (( $# > 0 ))
+do
+    case "$1" in
+        -h | --help)
+            print_help >&2
+            exit
+            ;;
+        -t* | --target)
+            # Target can only be set once
+            if [ -n "$TARGET" ]
+            then
+                echo "--target used more than once" >&2
+                exit 1
+            fi
+            # Get the target from the argument (short variant)
+            # or read it from the next
+            if [[ "$1" == -t* ]] && (( ${#1} > 2 ))
+            then
+                TARGET="$1"
+            elif (( $# > 1 )) && [[ "$2" != -* ]]
+            then
+                shift
+                TARGET="-t$1"
+            else
+                echo "Missing target name after --target" >&2
+                exit 1
+            fi
+            ;;
+        --)
+            # Everything after the double dash is tokens fed to the parser
+            shift
+            if (( $# > 0 ))
+            then
+                TOKENS=`tr " " , <<< "$@ 0"`
+            fi
+            break
+            ;;
+        -*)
+            echo "Unknown flag: $1" >&2
+            exit 1
+            ;;
+        *)
+            # Exactly one free argument is expected,
+            #and it is the path to the grammar file
+            if (( HAS_GRAMMAR ))
+            then
+                echo "Too many free arguments" >&2
+                exit 1
+            fi
+            GRAMMAR="$1"
+            HAS_GRAMMAR=1
+            ;;
+    esac
+    shift
+done
+
+# The grammar file must be given
+if (( !HAS_GRAMMAR ))
+then
+    echo "You did not specify the grammar file" >&2
+    exit 1
+fi
+
+# Base name of the grammar file
+BASENAME=`basename "${GRAMMAR%.*}"`
+
+# Make sure everything cachable is compiled
+make build >&2 &&
+
+# Generate the parser from the grammar
+"$OUT"/lemon "$GRAMMAR" -d"$OUT/$LEM" -Tsrc/lemon/lempar.c &&
+
+# Fill in the wrapper source file for the parser
+sed -e "s;%parser%;$LEM/$BASENAME;g" -e "s;%tokens%;$TOKENS;g" src/wrapper/main.c > "$OUT"/wrapper.c &&
+
+# Compile the parser with the wrapper
+"$CC" "$OUT"/wrapper.c -o "$OUT"/wrapper &&
+
+# Run the parser and draw its outputs
+"$OUT"/wrapper | "$OUT"/render $TARGET
