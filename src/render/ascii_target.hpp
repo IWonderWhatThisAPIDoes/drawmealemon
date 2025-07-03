@@ -8,7 +8,9 @@
 #pragma once
 
 #include <iostream>
+#include <memory>
 #include "render_target.hpp"
+#include "ascii_fragment_table.hpp"
 
 namespace dmalem {
 
@@ -40,13 +42,14 @@ public:
     void finalize() override;
 
 private:
+    void left_margin();
     void blank_left_column();
     void blank_right_column();
-    void endl();
     void shift_first_row();
     void flush_error_recovery();
 
     std::ostream* ostr;
+    std::unique_ptr<ascii_fragment_table> fragments;
     size_t stateCount = 0;
     size_t pendingTokens = 0;
     bool pendingSyntaxError = false;
