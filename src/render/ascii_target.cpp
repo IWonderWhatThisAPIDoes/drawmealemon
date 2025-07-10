@@ -37,7 +37,7 @@ void ascii_target::header() {
 }
 
 void ascii_target::left_margin() {
-    if (pendingTokens > 0)
+    if (pendingToken)
         fragments->pending_token();
     else
         fragments->empty_left_margin();
@@ -69,15 +69,17 @@ void ascii_target::right_column(state_fragment_data::row_kind rowKind, size_t po
 }
 
 void ascii_target::shift_first_row() {
-    if (pendingTokens > 1) {
-        fragments->pending_token();
+    if (pendingNonterminal) {
+        left_margin();
         fragments->shift_nonterminal();
-        fragments->column_separator();
-    } else {
+        pendingNonterminal = false;
+    } else if (pendingToken) {
         fragments->shift_token();
-        fragments->column_separator();
+        pendingToken = false;
+    } else {
+        throw std::logic_error(__FUNCTION__);
     }
-    --pendingTokens;
+    fragments->column_separator();
     right_column(state_fragment_data::row_kind::shift);
     endl();
 }
@@ -99,7 +101,7 @@ void ascii_target::flush_error_recovery() {
     fragments->column_separator();
     right_column();
     endl();
-    ++pendingTokens;
+    pendingNonterminal = true;
 }
 
 void ascii_target::endl() {
@@ -112,7 +114,7 @@ void ascii_target::input_token(const std::string_view& name) {
     fragments->column_separator();
     right_column();
     endl();
-    ++pendingTokens;
+    pendingToken = true;
 }
 
 void ascii_target::shift(int nextState) {
@@ -148,7 +150,7 @@ void ascii_target::reduce(size_t count, const std::string_view& tokenName, const
     fragments->column_separator();
     right_column();
     endl();
-    ++pendingTokens;
+    pendingNonterminal = true;
 }
 
 void ascii_target::pop() {
@@ -162,7 +164,7 @@ void ascii_target::discard() {
     right_column();
     endl();
     pendingSyntaxError = false;
-    pendingTokens = 0;
+    pendingToken = false;
     blank_line();
 }
 
@@ -172,7 +174,8 @@ void ascii_target::accept() {
     fragments->column_separator();
     right_column(state_fragment_data::row_kind::accept, stackContents.size());
     endl();
-    pendingTokens = 0;
+    pendingToken = false;
+    pendingNonterminal = false;
     blank_left_column();
     fragments->accept_label();
     endl();
@@ -185,8 +188,8 @@ void ascii_target::failure() {
     right_column(state_fragment_data::row_kind::failure, stackContents.size());
     endl();
     stackContents.clear();
-    pendingTokens = 0;
-    pendingSyntaxError = false;
+    pendingToken = false;
+    pendingNonterminal = false;
     blank_left_column();
     fragments->failure_label();
     endl();
@@ -199,8 +202,8 @@ void ascii_target::stack_overflow() {
     right_column(state_fragment_data::row_kind::stack_overflow, stackContents.size());
     endl();
     stackContents.clear();
-    pendingTokens = 0;
-    pendingSyntaxError = false;
+    pendingToken = false;
+    pendingNonterminal = false;
     blank_left_column();
     fragments->overflow_label();
     endl();

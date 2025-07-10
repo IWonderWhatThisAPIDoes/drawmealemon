@@ -88,7 +88,8 @@ private:
     std::ostream* ostr;
     std::unique_ptr<ascii_fragment_table> fragments;
     std::vector<stack_frame> stackContents;
-    size_t pendingTokens = 0;
+    bool pendingToken = false;
+    bool pendingNonterminal = false;
     bool pendingSyntaxError = false;
     size_t errorRecoveryPopped = 0;
     size_t lineIndex = 0;
