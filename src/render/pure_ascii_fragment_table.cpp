@@ -27,50 +27,39 @@ void pure_ascii_fragment_table::right_column_head() const {
     stream() << " STACK";
 }
 
-void pure_ascii_fragment_table::state(int state, size_t line) const {
-    switch (line) {
-        case 0:
-            stream() << "--,";
-            break;
-        case 1:
-            stream() << std::right << std::setw(2) << state << '|';
-            break;
-        default:
-            stream() << "  |";
+void pure_ascii_fragment_table::state(const state_fragment_data& data) const {
+    using enum state_fragment_data::row_kind;
+    if (data.columnIndex >= data.columnCount - data.popCount) {
+        // Special fragments for columns that are being removed
+        if (data.rowKind == discard || data.rowKind == failure || data.rowKind == stack_overflow)
+            stream() << "xx+";
+        else if (data.columnIndex == data.columnCount - 1)
+            stream() << "--`";
+        else
+            stream() << "--+";
+    } else {
+        // Use the normal fragment in all other cases
+        switch (data.line) {
+            case 0:
+                stream() << "--,";
+                break;
+            case 1:
+                if (data.state.has_value())
+                    // Print the state number
+                    stream() << std::right << std::setw(2) << data.state.value() << '|';
+                else
+                    // Pending reduce
+                    stream() << " R|";
+                break;
+            default:
+                stream() << "  |";
+        }
     }
 }
 
-void pure_ascii_fragment_table::pending_reduce(size_t line) const {
-    switch (line) {
-        case 0:
-            stream() << "--,";
-            break;
-        case 1:
-            stream() << " R|";
-            break;
-        default:
-            stream() << "  |";
-    }
-}
-
-void pure_ascii_fragment_table::pull_nonterminal() const {
-    stream() << std::right << std::setw(input_column_width - entry_arrow_length - 1) << ",---";
-}
-
-void pure_ascii_fragment_table::conjure_nonterminal() const {
-    stream() << std::right << std::setw(input_column_width - entry_arrow_length - 1) << ",-* ";
-}
-
-void pure_ascii_fragment_table::reduce_state() const {
-    stream() << "--+";
-}
-
-void pure_ascii_fragment_table::reduce_last_state() const {
-    stream() << "--`";
-}
-
-void pure_ascii_fragment_table::discard_state() const {
-    stream() << "xx+";
+void pure_ascii_fragment_table::pull_nonterminal(size_t reduceCount) const {
+    stream() << std::right << std::setw(input_column_width - entry_arrow_length - 1) <<
+        (reduceCount == 0 ? ",-* " : ",---");
 }
 
 void pure_ascii_fragment_table::bring_token(const std::string_view& name) const {

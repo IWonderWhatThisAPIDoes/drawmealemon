@@ -10,6 +10,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <optional>
 #include "render_target.hpp"
 #include "ascii_fragment_table.hpp"
 
@@ -46,7 +47,10 @@ private:
     void header();
     void left_margin();
     void blank_left_column();
-    void blank_right_column();
+    void right_column(
+        state_fragment_data::row_kind rowKind = state_fragment_data::row_kind::neutral,
+        size_t popCount = 0
+    );
     void blank_line();
     void shift_first_row();
     void flush_error_recovery();
@@ -60,15 +64,10 @@ private:
          */
         size_t firstLine;
         /**
-         * If @ref isPendingReduce is `false`,
-         * this is the index of the state represented by the frame
+         * Index of the state represented by the frame.
+         * Empty if the frame corresponds to a pending reduce instead
          */
-        int stateId;
-        /**
-         * True if the frame corresponds to a pending reduce,
-         * false if it is a state
-         */
-        bool isPendingReduce;
+        std::optional<int> stateId;
         /**
          * Constructs a stack frame that corresponds to a state
          * 

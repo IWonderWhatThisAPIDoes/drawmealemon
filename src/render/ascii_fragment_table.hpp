@@ -8,8 +8,80 @@
 #pragma once
 
 #include <iostream>
+#include <optional>
+#include <variant>
 
 namespace dmalem {
+
+/**
+ * Describes a fragment of a state column and the context
+ * in which it appears
+ * 
+ * Can be mapped to an ASCII visualization fragment
+ */
+struct state_fragment_data {
+    /**
+     * Enumerates the kinds of rows of the visualization
+     * that are relevant to presentation of the state columns
+     */
+    enum class row_kind {
+        /**
+         * Row where no updates take place
+         */
+        neutral,
+        /**
+         * Row where a new state or pending reduce is shifted
+         */
+        shift,
+        /**
+         * Row where a rule is reduces
+         */
+        reduce,
+        /**
+         * Row where one or more states are discarded
+         */
+        discard,
+        /**
+         * Row where the stack is cleared out because the parser
+         * has terminated successfully
+         */
+        accept,
+        /**
+         * Row where the stack is cleared out because the parser has failed
+         */
+        failure,
+        /**
+         * Row where the stack is cleared out because it has overflown
+         */
+        stack_overflow,
+    };
+    /**
+     * Index of the state represented by the particular column.
+     * Empty if the column corresponds to a pending reduce instaed
+     */
+    std::optional<int> state;
+    /**
+     * Index of the current line, measured from the start of the state column
+     */
+    size_t line;
+    /**
+     * How many state columns there are in total
+     */
+    size_t columnCount;
+    /**
+     * Zero-based index of the current state column
+     */
+    size_t columnIndex;
+    /**
+     * What kind of change is made to the stack in the current row
+     */
+    row_kind rowKind;
+    /**
+     * If @ref rowKind is either @ref row_kind::neutral @ref row_kind::shift,
+     * this is zero, otherwise it is how many states will be removed by the update
+     */
+    size_t popCount;
+};
 
 /**
  * Provides methods for pasting template character sequences
@@ -80,43 +152,16 @@ public:
     /**
      * Prints a row of a state column, at fixed state width
      * 
-     * @param state Index of the state
-     * @param line Index of the current line, measured from the start
-     *             of the state column
+     * @param data Description of the particular state fragment to render
      */
-    virtual void state(int state, size_t line) const = 0;
+    virtual void state(const state_fragment_data& data) const = 0;
     /**
-     * Prints a row of a pending reduce column, at fixed state width
+     * Prints the indicator of a reduce,
+     * padded to the width of the left column (without margin)
      * 
-     * @param line Index of the current line, measured from the start
-     *             of the state column
+     * @param reduceCount How many states have been reduced from the stack
      */
-    virtual void pending_reduce(size_t line) const = 0;
-    /**
-     * Prints the indicator of a non-empty reduce,
-     * padded to the width of the left column (without margin)
-     */
-    virtual void pull_nonterminal() const = 0;
-    /**
-     * Prints the indicator of an empty reduce,
-     * padded to the width of the left column (without margin)
-     */
-    virtual void conjure_nonterminal() const = 0;
-    /**
-     * Prints the last row of a state or pending reduce column
-     * as it is being reduced
-     */
-    virtual void reduce_state() const = 0;
-    /**
-     * Prints the last row of a state or pending reduce column
-     * as it is being reduced, and is the topmost state column
-     */
-    virtual void reduce_last_state() const = 0;
-    /**
-     * Prints the last row of a state or pending reduce column
-     * as it is being discarded
-     */
-    virtual void discard_state() const = 0;
+    virtual void pull_nonterminal(size_t reduceCount) const = 0;
     /**
      * Prints the row where a new input token is read,
      * padded to the width of the left column with margin

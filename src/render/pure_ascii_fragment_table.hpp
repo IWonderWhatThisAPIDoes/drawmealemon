@@ -20,13 +20,8 @@ public:
     void column_separator() const override;
     void left_column_head() const override;
     void right_column_head() const override;
-    void state(int state, size_t line) const override;
-    void pending_reduce(size_t line) const override;
-    void pull_nonterminal() const override;
-    void conjure_nonterminal() const override;
-    void reduce_state() const override;
-    void reduce_last_state() const override;
-    void discard_state() const override;
+    void state(const state_fragment_data& data) const override;
+    void pull_nonterminal(size_t reduceCount) const override;
     void bring_token(const std::string_view& name) const override;
     void shift_token() const override;
     void shift_nonterminal() const override;

@@ -73,11 +73,11 @@ TEST(left_columns_have_equal_length) {
     const auto empty = ostr.str();
     // Empty reduce
     ostr.str("");
-    table.conjure_nonterminal();
+    table.pull_nonterminal(0);
     const auto conjure = ostr.str();
     // Non-empty reduce
     ostr.str("");
-    table.pull_nonterminal();
+    table.pull_nonterminal(1);
     const auto pull = ostr.str();
     // Nonterminal name
     ostr.str("");
@@ -130,50 +130,51 @@ TEST(left_double_columns_have_equal_length) {
 }
 
 TEST(states_have_equal_length) {
+    using enum dmalem::state_fragment_data::row_kind;
     std::ostringstream ostr;
     pure_ascii_fragment_table table(ostr);
     // State column
-    table.state(0, 42);
+    table.state({.state = 1, .line = 42, .columnCount = 1});
     const auto state = ostr.str();
     // Start of state column
     ostr.str("");
-    table.state(0, 0);
+    table.state({.state = 1, .line = 0, .columnCount = 1, .rowKind = shift});
     const auto state1 = ostr.str();
     // Start of state column
     ostr.str("");
-    table.state(0, 1);
+    table.state({.state = 1, .line = 1, .columnCount = 1});
     const auto state2 = ostr.str();
     // Pending reduce column
     ostr.str("");
-    table.pending_reduce(42);
+    table.state({.line = 42, .columnCount = 1});
     const auto pending = ostr.str();
     // Start of pending reduce column
     ostr.str("");
-    table.pending_reduce(0);
+    table.state({.line = 0, .columnCount = 1, .rowKind = shift});
     const auto pending1 = ostr.str();
     // Start of pending reduce column
     ostr.str("");
-    table.pending_reduce(1);
+    table.state({.line = 1, .columnCount = 1});
     const auto pending2 = ostr.str();
     // Reduce
     ostr.str("");
-    table.reduce_state();
-    const auto reduce = ostr.str();
+    table.state({.line = 42, .columnCount = 2, .columnIndex = 0, .rowKind = reduce, .popCount = 2});
+    const auto reduce1 = ostr.str();
     // Reduce last
     ostr.str("");
-    table.reduce_last_state();
-    const auto reduce1 = ostr.str();
+    table.state({.line = 42, .columnCount = 2, .columnIndex = 1, .rowKind = reduce, .popCount = 2});
+    const auto reduce2 = ostr.str();
     // discard
     ostr.str("");
-    table.discard_state();
-    const auto discard = ostr.str();
+    table.state({.line = 42, .columnCount = 2, .columnIndex = 1, .rowKind = discard, .popCount = 1});
+    const auto discard1 = ostr.str();
     // Verify that all column widths are equal
     TEST_ASSERT_EQ(state.length(), state1.length());
     TEST_ASSERT_EQ(state.length(), state2.length());
     TEST_ASSERT_EQ(state.length(), pending.length());
     TEST_ASSERT_EQ(state.length(), pending1.length());
     TEST_ASSERT_EQ(state.length(), pending2.length());
-    TEST_ASSERT_EQ(state.length(), reduce.length());
     TEST_ASSERT_EQ(state.length(), reduce1.length());
-    TEST_ASSERT_EQ(state.length(), discard.length());
+    TEST_ASSERT_EQ(state.length(), reduce2.length());
+    TEST_ASSERT_EQ(state.length(), discard1.length());
 }
