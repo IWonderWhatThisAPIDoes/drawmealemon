@@ -10,22 +10,30 @@
 
 namespace dmalem {
 
+ascii_target::stack_frame ascii_target::stack_frame::state(int state, size_t line) noexcept {
+    return stack_frame {line, state};
+}
+
+ascii_target::stack_frame ascii_target::stack_frame::pending_reduce(size_t line) noexcept {
+    return stack_frame {line, 0, true};
+}
+
 ascii_target::ascii_target(std::ostream& ostr) :
     ostr(&ostr),
     fragments(std::make_unique<pure_ascii_fragment_table>())
 {
     fragments->stream(ostr);
+    header();
+    stackContents.push_back(stack_frame::state(0, lineIndex));
+    blank_line();
+    blank_line();
+}
+
+void ascii_target::header() {
     fragments->left_column_head();
     fragments->column_separator();
     fragments->right_column_head();
-    fragments->endl();
-    blank_left_column();
-    fragments->shift_state_first_row(0);
-    fragments->endl();
-    blank_left_column();
-    fragments->shift_state_second_row(0);
-    fragments->endl();
-    stateCount = 1;
+    endl();
 }
 
 void ascii_target::left_margin() {
@@ -41,9 +49,19 @@ void ascii_target::blank_left_column() {
     fragments->column_separator();
 }
 
+void ascii_target::blank_line() {
+    blank_left_column();
+    blank_right_column();
+    endl();
+}
+
 void ascii_target::blank_right_column() {
-    for (size_t i = 0; i < stateCount; ++i)
-        fragments->state();
+    for (const stack_frame& frame : stackContents) {
+        if (frame.isPendingReduce)
+            fragments->pending_reduce(lineIndex - frame.firstLine);
+        else
+            fragments->state(frame.stateId, lineIndex - frame.firstLine);
+    }
 }
 
 void ascii_target::shift_first_row() {
@@ -57,15 +75,15 @@ void ascii_target::shift_first_row() {
     }
     --pendingTokens;
     blank_right_column();
-    fragments->shift_state_first_row(0);
-    fragments->endl();
+    endl();
 }
 
 void ascii_target::flush_error_recovery() {
     if (!pendingSyntaxError)
         return;
     pendingSyntaxError = false;
-    stateCount -= errorRecoveryPopped;
+    for (size_t i = 0; i < errorRecoveryPopped; ++i)
+        stackContents.pop_back();
     left_margin();
     fragments->conjure_nonterminal();
     fragments->column_separator();
@@ -73,41 +91,40 @@ void ascii_target::flush_error_recovery() {
     for (size_t i = 0; i < errorRecoveryPopped; ++i)
         fragments->discard_state();
     fragments->syntax_error_label();
-    fragments->endl();
+    endl();
     left_margin();
     fragments->nonterminal_name("error");
     fragments->column_separator();
     blank_right_column();
-    fragments->endl();
+    endl();
     ++pendingTokens;
+}
+
+void ascii_target::endl() {
+    ++lineIndex;
+    fragments->endl();
 }
 
 void ascii_target::input_token(const std::string_view& name) {
     fragments->bring_token(name);
     fragments->column_separator();
     blank_right_column();
-    fragments->endl();
+    endl();
     ++pendingTokens;
 }
 
 void ascii_target::shift(int nextState) {
     flush_error_recovery();
+    stackContents.push_back(stack_frame::state(nextState, lineIndex));
     shift_first_row();
-    blank_left_column();
-    blank_right_column();
-    fragments->shift_state_second_row(nextState);
-    fragments->endl();
-    ++stateCount;
+    blank_line();
 }
 
 void ascii_target::shift_reduce() {
     flush_error_recovery();
+    stackContents.push_back(stack_frame::pending_reduce(lineIndex));
     shift_first_row();
-    blank_left_column();
-    blank_right_column();
-    fragments->shift_reduce_second_row();
-    fragments->endl();
-    ++stateCount;
+    blank_line();
 }
 
 void ascii_target::syntax_error() {
@@ -116,7 +133,8 @@ void ascii_target::syntax_error() {
 }
 
 void ascii_target::reduce(size_t count, const std::string_view& tokenName, const std::string_view& ruleName) {
-    stateCount -= count;
+    for (size_t i = 0; i < count; ++i)
+        stackContents.pop_back();
     left_margin();
     if (count == 0)
         fragments->conjure_nonterminal();
@@ -129,12 +147,12 @@ void ascii_target::reduce(size_t count, const std::string_view& tokenName, const
     if (count != 0)
         fragments->reduce_last_state();
     fragments->reduce_rule_label(ruleName);
-    fragments->endl();
+    endl();
     left_margin();
     fragments->nonterminal_name(tokenName);
     fragments->column_separator();
     blank_right_column();
-    fragments->endl();
+    endl();
     ++pendingTokens;
 }
 
@@ -147,56 +165,54 @@ void ascii_target::discard() {
     fragments->empty_left_column();
     fragments->column_separator();
     blank_right_column();
-    fragments->endl();
+    endl();
     pendingSyntaxError = false;
     pendingTokens = 0;
-    blank_left_column();
-    blank_right_column();
-    fragments->endl();
+    blank_line();
 }
 
 void ascii_target::accept() {
     fragments->discard_token();
     fragments->empty_left_column();
     fragments->column_separator();
-    for (size_t i = 1; i < stateCount; ++i)
+    for (size_t i = 1; i < stackContents.size(); ++i)
         fragments->reduce_state();
     fragments->reduce_last_state();
-    fragments->endl();
+    endl();
     pendingTokens = 0;
     blank_left_column();
     fragments->accept_label();
-    fragments->endl();
+    endl();
 }
 
 void ascii_target::failure() {
     fragments->discard_token();
     fragments->empty_left_column();
     fragments->column_separator();
-    for (size_t i = 0; i < stateCount; ++i)
+    for (size_t i = 0; i < stackContents.size(); ++i)
         fragments->discard_state();
-    fragments->endl();
-    stateCount = 0;
+    endl();
+    stackContents.clear();
     pendingTokens = 0;
     pendingSyntaxError = false;
     blank_left_column();
     fragments->failure_label();
-    fragments->endl();
+    endl();
 }
 
 void ascii_target::stack_overflow() {
     fragments->discard_token();
     fragments->empty_left_column();
     fragments->column_separator();
-    for (size_t i = 0; i < stateCount; ++i)
+    for (size_t i = 0; i < stackContents.size(); ++i)
         fragments->discard_state();
-    fragments->endl();
-    stateCount = 0;
+    endl();
+    stackContents.clear();
     pendingTokens = 0;
     pendingSyntaxError = false;
     blank_left_column();
     fragments->overflow_label();
-    fragments->endl();
+    endl();
 }
 
 void ascii_target::set_options(const std::vector<std::string>& options) {

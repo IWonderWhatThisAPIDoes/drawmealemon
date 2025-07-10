@@ -20,12 +20,8 @@ public:
     void column_separator() const override;
     void left_column_head() const override;
     void right_column_head() const override;
-    void shift_state_first_row(int state) const override;
-    void shift_state_second_row(int state) const override;
-    void shift_reduce_first_row() const override;
-    void shift_reduce_second_row() const override;
-    void state() const override;
-    void pending_reduce() const override;
+    void state(int state, size_t line) const override;
+    void pending_reduce(size_t line) const override;
     void pull_nonterminal() const override;
     void conjure_nonterminal() const override;
     void reduce_state() const override;

@@ -78,33 +78,20 @@ public:
      */
     virtual void right_column_head() const = 0;
     /**
-     * Prints the first row of a state column, at the fixed state width
-     * 
-     * @param state Index of the state
-     */
-    virtual void shift_state_first_row(int state) const = 0;
-    /**
-     * Prints the second row of a state column, at the fixed state width
-     * 
-     * @param state Index of the state
-     */
-    virtual void shift_state_second_row(int state) const = 0;
-    /**
-     * Prints the first row of a pending reduce column, at the fixed state width
-     */
-    virtual void shift_reduce_first_row() const = 0;
-    /**
-     * Prints the second row of a pending reduce column, at the fixed state width
-     */
-    virtual void shift_reduce_second_row() const = 0;
-    /**
      * Prints a row of a state column, at fixed state width
+     * 
+     * @param state Index of the state
+     * @param line Index of the current line, measured from the start
+     *             of the state column
      */
-    virtual void state() const = 0;
+    virtual void state(int state, size_t line) const = 0;
     /**
      * Prints a row of a pending reduce column, at fixed state width
+     * 
+     * @param line Index of the current line, measured from the start
+     *             of the state column
      */
-    virtual void pending_reduce() const = 0;
+    virtual void pending_reduce(size_t line) const = 0;
     /**
      * Prints the indicator of a non-empty reduce,
      * padded to the width of the left column (without margin)

@@ -133,27 +133,27 @@ TEST(states_have_equal_length) {
     std::ostringstream ostr;
     pure_ascii_fragment_table table(ostr);
     // State column
-    table.state();
+    table.state(0, 42);
     const auto state = ostr.str();
     // Start of state column
     ostr.str("");
-    table.shift_state_first_row(0);
+    table.state(0, 0);
     const auto state1 = ostr.str();
     // Start of state column
     ostr.str("");
-    table.shift_state_second_row(0);
+    table.state(0, 1);
     const auto state2 = ostr.str();
     // Pending reduce column
     ostr.str("");
-    table.pending_reduce();
+    table.pending_reduce(42);
     const auto pending = ostr.str();
     // Start of pending reduce column
     ostr.str("");
-    table.shift_reduce_first_row();
+    table.pending_reduce(0);
     const auto pending1 = ostr.str();
     // Start of pending reduce column
     ostr.str("");
-    table.shift_reduce_second_row();
+    table.pending_reduce(1);
     const auto pending2 = ostr.str();
     // Reduce
     ostr.str("");
@@ -161,7 +161,7 @@ TEST(states_have_equal_length) {
     const auto reduce = ostr.str();
     // Reduce last
     ostr.str("");
-    table.reduce_state();
+    table.reduce_last_state();
     const auto reduce1 = ostr.str();
     // discard
     ostr.str("");

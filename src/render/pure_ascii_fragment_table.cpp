@@ -27,28 +27,30 @@ void pure_ascii_fragment_table::right_column_head() const {
     stream() << " STACK";
 }
 
-void pure_ascii_fragment_table::shift_state_first_row(int state) const {
-    stream() << "--,";
+void pure_ascii_fragment_table::state(int state, size_t line) const {
+    switch (line) {
+        case 0:
+            stream() << "--,";
+            break;
+        case 1:
+            stream() << std::right << std::setw(2) << state << '|';
+            break;
+        default:
+            stream() << "  |";
+    }
 }
 
-void pure_ascii_fragment_table::shift_state_second_row(int state) const {
-    stream() << std::right << std::setw(2) << state << '|';
-}
-
-void pure_ascii_fragment_table::shift_reduce_first_row() const {
-    stream() << "--,";
-}
-
-void pure_ascii_fragment_table::shift_reduce_second_row() const {
-    stream() << " R|";
-}
-
-void pure_ascii_fragment_table::state() const {
-    stream() << "  |";
-}
-
-void pure_ascii_fragment_table::pending_reduce() const {
-    stream() << "  |";
+void pure_ascii_fragment_table::pending_reduce(size_t line) const {
+    switch (line) {
+        case 0:
+            stream() << "--,";
+            break;
+        case 1:
+            stream() << " R|";
+            break;
+        default:
+            stream() << "  |";
+    }
 }
 
 void pure_ascii_fragment_table::pull_nonterminal() const {
