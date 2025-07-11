@@ -104,20 +104,32 @@ void ascii_target::flush_error_recovery() {
     pendingNonterminal = true;
 }
 
+void ascii_target::flush_input_token() {
+    if (pendingInput.empty())
+        return;
+    fragments->bring_token(pendingInput);
+    fragments->column_separator();
+    right_column();
+    endl();
+    pendingInput.clear();
+    pendingToken = true;
+}
+
 void ascii_target::endl() {
     ++lineIndex;
     fragments->endl();
 }
 
 void ascii_target::input_token(const std::string_view& name) {
-    fragments->bring_token(name);
-    fragments->column_separator();
-    right_column();
-    endl();
-    pendingToken = true;
+    // Postpone printing of the token until after pending reduce is handled
+    pendingInput = name;
 }
 
 void ascii_target::shift(int nextState) {
+    // If a nonterminal is being shifted as a result of a pending reduce
+    // from previous token, do not indicate the new token just yet
+    if (!pendingNonterminal)
+        flush_input_token();
     flush_error_recovery();
     stackContents.push_back(stack_frame::state(nextState, lineIndex));
     shift_first_row();
@@ -125,6 +137,10 @@ void ascii_target::shift(int nextState) {
 }
 
 void ascii_target::shift_reduce() {
+    // If a nonterminal is being shifted as a result of a pending reduce
+    // from previous token, do not indicate the new token just yet
+    if (!pendingNonterminal)
+        flush_input_token();
     flush_error_recovery();
     stackContents.push_back(stack_frame::pending_reduce(lineIndex));
     shift_first_row();
@@ -132,11 +148,16 @@ void ascii_target::shift_reduce() {
 }
 
 void ascii_target::syntax_error() {
+    flush_input_token();
     pendingSyntaxError = true;
     errorRecoveryPopped = 0;
 }
 
 void ascii_target::reduce(size_t count, const std::string_view& tokenName, const std::string_view& ruleName) {
+    // Indicate that a token has been read from the input
+    // unless the topmost frame is a pending reduce
+    if (stackContents.back().stateId.has_value())
+        flush_input_token();
     left_margin();
     fragments->pull_nonterminal(count);
     fragments->column_separator();
@@ -162,6 +183,8 @@ void ascii_target::discard() {
     fragments->empty_left_column();
     fragments->column_separator();
     right_column();
+    if (pendingSyntaxError)
+        fragments->syntax_error_label();
     endl();
     pendingSyntaxError = false;
     pendingToken = false;
@@ -186,16 +209,24 @@ void ascii_target::failure() {
     fragments->empty_left_column();
     fragments->column_separator();
     right_column(state_fragment_data::row_kind::failure, stackContents.size());
+    // If the failure is due to an immediate syntax error, print the notice as well
+    if (pendingSyntaxError)
+        fragments->syntax_error_label();
     endl();
     stackContents.clear();
     pendingToken = false;
     pendingNonterminal = false;
+    pendingSyntaxError = false;
     blank_left_column();
     fragments->failure_label();
     endl();
 }
 
 void ascii_target::stack_overflow() {
+    flush_input_token();
+    // If the stack overflows with pending error,
+    // it means an attempt was made to shift the error nonterminal
+    flush_error_recovery();
     fragments->discard_token();
     fragments->empty_left_column();
     fragments->column_separator();

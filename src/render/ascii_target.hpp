@@ -54,6 +54,7 @@ private:
     void blank_line();
     void shift_first_row();
     void flush_error_recovery();
+    void flush_input_token();
     void endl();
     /**
      * Information about a single stack frame
@@ -93,6 +94,7 @@ private:
     bool pendingSyntaxError = false;
     size_t errorRecoveryPopped = 0;
     size_t lineIndex = 0;
+    std::string pendingInput;
 };
 
 }
