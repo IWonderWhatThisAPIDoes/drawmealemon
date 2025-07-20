@@ -113,16 +113,18 @@ void pure_ascii_fragment_table::reduce_rule_label(const std::string_view& rule) 
     stream() << ' ' << rule;
 }
 
-void pure_ascii_fragment_table::accept_label() const {
-    stream() << " Accept!";
-}
-
-void pure_ascii_fragment_table::failure_label() const {
-    stream() << " Failure";
-}
-
-void pure_ascii_fragment_table::overflow_label() const {
-    stream() << " Stack overflow!";
+void pure_ascii_fragment_table::termination_label(parser_termination_cause cause) const {
+    switch (cause) {
+        case parser_termination_cause::accept:
+            stream() << " Accept!";
+            break;
+        case parser_termination_cause::failure:
+            stream() << " Failure!";
+            break;
+        case parser_termination_cause::stack_overflow:
+            stream() << " Stack overflow!";
+            break;
+    }
 }
 
 void pure_ascii_fragment_table::syntax_error_label() const {

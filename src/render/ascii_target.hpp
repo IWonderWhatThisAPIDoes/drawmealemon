@@ -44,18 +44,62 @@ public:
     void finalize() override;
 
 private:
+    /**
+     * Prints the header row of the output
+     */
     void header();
+    /**
+     * Prints the left margin of the visualization that may or may not
+     * contain a pending token indicator
+     */
     void left_margin();
+    /**
+     * Prints a whole empty left column,
+     * including the margin and the column separator
+     */
     void blank_left_column();
+    /**
+     * Prints a row of the stack trace in a given context
+     * 
+     * @param rowKind Optionally indicate special context of the row
+     * @param popCount For relevant values of the @p rowKind parameter,
+     *                 indicates how many states are being removed in this row
+     */
     void right_column(
         state_fragment_data::row_kind rowKind = state_fragment_data::row_kind::neutral,
         size_t popCount = 0
     );
+    /**
+     * Prints a full row with no special content
+     */
     void blank_line();
-    void shift_first_row();
+    /**
+     * Shifts a token to a new state or pending reduce
+     * 
+     * @param nextState Index of the state to switch to,
+     *                  or empty if the frame corresponds to a pending reduce
+     */
+    void shift_frame(std::optional<int> nextState);
+    /**
+     * If error recovery is in progress, ends it and prints
+     * the row that describes how the error was handled
+     */
     void flush_error_recovery();
+    /**
+     * If a new input token has not yet been printed,
+     * prints it now
+     */
     void flush_input_token();
+    /**
+     * Prints a line terminator. Also increments row counter
+     */
     void endl();
+    /**
+     * Prints the footer of the visualization
+     * 
+     * @param cause Indicates how the parser exited
+     */
+    void footer(parser_termination_cause cause);
     /**
      * Information about a single stack frame
      */
@@ -69,21 +113,6 @@ private:
          * Empty if the frame corresponds to a pending reduce instead
          */
         std::optional<int> stateId;
-        /**
-         * Constructs a stack frame that corresponds to a state
-         * 
-         * @param state Index of the state associated with the frame
-         * @param line Index of the output line where the frame starts
-         * @return The new stack frame
-         */
-        static stack_frame state(int state, size_t line) noexcept;
-        /**
-         * Constructs a stack frame that corresponds to a pending reduce
-         * 
-         * @param line Index of the output line where the frame starts
-         * @return The new stack frame
-         */
-        static stack_frame pending_reduce(size_t line) noexcept;
     };
 
     std::ostream* ostr;

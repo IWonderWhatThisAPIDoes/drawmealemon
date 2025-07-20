@@ -32,9 +32,7 @@ public:
     void empty_left_column() const override;
     void nonterminal_name(const std::string_view& name) const override;
     void reduce_rule_label(const std::string_view& rule) const override;
-    void accept_label() const override;
-    void failure_label() const override;
-    void overflow_label() const override;
+    void termination_label(parser_termination_cause cause) const override;
     void syntax_error_label() const override;
 };
 

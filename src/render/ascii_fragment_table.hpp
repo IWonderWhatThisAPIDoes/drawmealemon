@@ -14,6 +14,24 @@
 namespace dmalem {
 
 /**
+ * Enumerates the possible end states of the parser
+ */
+enum class parser_termination_cause {
+    /**
+     * Input has been parsed successfully
+     */
+    accept,
+    /**
+     * Failure due to an irrecoverable syntax error
+     */
+    failure,
+    /**
+     * Failure due to parser stack overflow
+     */
+    stack_overflow,
+};
+
+/**
  * Describes a fragment of a state column and the context
  * in which it appears
  * 
@@ -81,6 +99,15 @@ struct state_fragment_data {
      * this is zero, otherwise it is how many states will be removed by the update
      */
     size_t popCount;
+    /**
+     * Constructs a @ref row_kind corresponding to a terminating row
+     * with termination due to a given cause
+     * 
+     * @param cause The cause for termination
+     * @return Row kind of the termination row
+     * @throw std::logic_error @p cause is a trap value
+     */
+    static row_kind termination_row_kind(parser_termination_cause cause);
 };
 
 /**
@@ -215,17 +242,11 @@ public:
      */
     virtual void reduce_rule_label(const std::string_view& rule) const = 0;
     /**
-     * Prints the label that indicates the parser has exited successfully
+     * Prints a label that indicates the parser has exited
+     * 
+     * @param cause Indicates the reason for the parser exiting
      */
-    virtual void accept_label() const = 0;
-    /**
-     * Prints the label that indicates the parser has exited with a failure
-     */
-    virtual void failure_label() const = 0;
-    /**
-     * Prints the label that indicates the parser has overflown its stack
-     */
-    virtual void overflow_label() const = 0;
+    virtual void termination_label(parser_termination_cause cause) const = 0;
     /**
      * Prints the label that indicates a syntax error
      */
