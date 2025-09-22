@@ -236,10 +236,6 @@ void ascii_target::stack_overflow() {
     footer(parser_termination_cause::stack_overflow);
 }
 
-void ascii_target::set_options(const std::vector<std::string>& options) {
-
-}
-
 void ascii_target::finalize() {
     ostr->flush();
 }

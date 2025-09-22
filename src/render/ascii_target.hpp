@@ -40,7 +40,6 @@ public:
     void accept() override;
     void failure() override;
     void stack_overflow() override;
-    void set_options(const std::vector<std::string>& options) override;
     void finalize() override;
 
 private:
