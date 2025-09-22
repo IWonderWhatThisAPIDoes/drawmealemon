@@ -18,13 +18,26 @@ namespace test {
 struct mock_discarded_argument {};
 
 /**
+ * Helper for @ref mkeep template construction.
+ * Performs an implicit cast between types, as a function
+ * 
+ * @tparam T Source type
+ * @tparam R Target type
+ * @param t Value to cast to the target type
+ */
+template<class R, class T>
+R default_mkeep_cast(T t) {
+    return t;
+}
+
+/**
  * Marker that tells a mock to copy its argument and store its value for later
  * 
  * @tparam T Type of the actual argument
  * @tparam R Type of the value logged for later retrieval
  * @tparam F Conversion from @p T to @p R
  */
-template<class T, class R = std::remove_const_t<T>, auto F = [](T t) -> R { return t; }>
+template<class T, class R = std::remove_const_t<T>, auto F = default_mkeep_cast<T, R>>
 struct mkeep;
 
 template<class T>
