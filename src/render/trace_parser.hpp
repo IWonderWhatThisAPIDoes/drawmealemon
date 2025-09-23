@@ -31,54 +31,78 @@ public:
      */
     using trace_action = std::function<void(T& target, const std::vector<string_pattern::field>& fields)>;
     /**
-     * Type of the list of patterns and their handlers sent to the parser
+     * Registers a string pattern and its associated handler
+     * 
+     * If more than one pattern matches, the first one in order of insertion is used
+     * 
+     * @param pattern Pattern to match against each line of input
+     * @param action  Handler to call when an input line matches @p pattern
+     * @return        @p this
      */
-    using pattern_list = std::vector<std::pair<string_pattern, trace_action>>;
+    trace_parser& add_pattern(string_pattern&& pattern, trace_action&& action) {
+        patterns.emplace_back(std::move(pattern), std::move(action));
+        return *this;
+    }
+    /**
+     * Sets an output stream for logging error reports when a line fails to parse
+     * 
+     * @param ostr Stream that receives log messages. Must live for as long
+     *             as any input is parsed using the parser
+     * @return     @p this
+     */
+    trace_parser& log_to(std::ostream& ostr) noexcept {
+        log = &ostr;
+        return *this;
+    }
+    /**
+     * Sets the target that will be forwarded to pattern handlers
+     * 
+     * @param target New target that will be forwarded to pattern handlers.
+     *               Must live for as long as any input is parsed using the parser
+     * @return       @p this
+     */
+    trace_parser& set_target(T& newTarget) noexcept {
+        target = &newTarget;
+        return *this;
+    }
     /**
      * Reads an input stream to the end, and parses each line and calls
      * the handler associated with its pattern
      * 
      * If a line fails to parse, it is reported to @p log
      * 
-     * @param    input The input stream
-     * @param patterns String patterns to match and their associated handlers
-     * @param      log Receives error reports when a line fails to parse
-     * @param   target Target object that will be passed to handlers
+     * @param input The input stream
+     * @throw std::invalid_argument No target has been set to receive the input
      */
-    static void parse(
-        std::istream& input,
-        const pattern_list& patterns,
-        std::ostream& log,
-        T& target
-    ) {
+    void parse(std::istream& input) const {
         std::string line;
         while (std::getline(input, line))
-            if (!parse_line(line, patterns, target))
-                log << "Unexpected input (could not parse line): \"" << line << '"' << std::endl;
+            if (!parse_line(line) && log)
+                *log << "Unexpected input (could not parse line): \"" << line << '"' << std::endl;
     }
     /**
      * Parses an input line and calls the handler associated with its pattern
      * 
-     * @param     line The input line
-     * @param patterns String patterns to match and their associated handlers
-     * @param   target Target object that will be passed to handlers
-     * @return         True on success, false if @p line does not match any
-     *                 pattern in @p patterns
+     * @param line The input line
+     * @return True on success, false if @p line does not match any registered pattern
+     * @throw std::invalid_argument No target has been set to receive the input
      */
-    static bool parse_line(
-        const std::string_view& line,
-        const pattern_list& patterns,
-        T& target
-    ) {
+    bool parse_line(const std::string_view& line) const {
+        if (!target)
+            throw std::invalid_argument(__FUNCTION__);
         for (const auto& [pattern, action] : patterns) {
             std::vector<string_pattern::field> fields;
             if (pattern.match(line, fields)) {
-                std::invoke(action, target, fields);
+                std::invoke(action, *target, fields);
                 return true;
             }
         }
         return false;
     }
+private:
+    std::vector<std::pair<string_pattern, trace_action>> patterns;
+    std::ostream* log = nullptr;
+    T* target = nullptr;
 };
 
 }

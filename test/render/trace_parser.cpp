@@ -50,8 +50,7 @@ using mock_handler = test::mock<void(
 TEST(no_logs_on_empty_input) {
     std::ostringstream log;
     std::istringstream input("");
-    int dummy = 0;
-    trace_parser<int>::parse(input, {}, log, dummy);
+    trace_parser<int>().log_to(log).parse(input);
     TEST_ASSERT_EQ_(log.str(), "", "Parser should not log anything when input is empty");
 }
 
@@ -61,11 +60,12 @@ TEST(match_first_pattern) {
     int dummy = 0;
     mock_handler realMock;
     mock_handler unusedMock;
-    trace_parser<int>::pattern_list patterns = {
-        {"abc", realMock},
-        {"def", unusedMock},
-    };
-    trace_parser<int>::parse(input, patterns, log, dummy);
+    trace_parser<int>()
+        .add_pattern("abc", realMock)
+        .add_pattern("def", unusedMock)
+        .log_to(log)
+        .set_target(dummy)
+        .parse(input);
     TEST_ASSERT_EQ_(log.str(), "", "Parser should not log anything when all input parses successfully");
     TEST_ASSERT_EQ_(realMock.call_count(), 1, "First pattern should have matched and its handler should have been called");
     TEST_ASSERT_EQ_(unusedMock.call_count(), 0, "Second pattern's handler should not have been called");
@@ -79,11 +79,12 @@ TEST(match_second_pattern) {
     int dummy = 0;
     mock_handler realMock;
     mock_handler unusedMock;
-    trace_parser<int>::pattern_list patterns = {
-        {"abc", unusedMock},
-        {"def", realMock},
-    };
-    trace_parser<int>::parse(input, patterns, log, dummy);
+    trace_parser<int>()
+        .add_pattern("abc", unusedMock)
+        .add_pattern("def", realMock)
+        .log_to(log)
+        .set_target(dummy)
+        .parse(input);
     TEST_ASSERT_EQ_(log.str(), "", "Parser should not log anything when all input parses successfully");
     TEST_ASSERT_EQ_(realMock.call_count(), 1, "Second pattern should have matched and its handler should have been called");
     TEST_ASSERT_EQ_(unusedMock.call_count(), 0, "First pattern's handler should not have been called");
@@ -96,8 +97,11 @@ TEST(match_nothing) {
     std::istringstream input("not-a-pattern");
     int dummy = 0;
     mock_handler unusedMock;
-    trace_parser<int>::pattern_list patterns = {{"abc", unusedMock}};
-    trace_parser<int>::parse(input, patterns, log, dummy);
+    trace_parser<int>()
+        .add_pattern("abc", unusedMock)
+        .log_to(log)
+        .set_target(dummy)
+        .parse(input);
     TEST_ASSERT_EQ_(unusedMock.call_count(), 0, "Handler of non-matching pattern should not have been called");
     TEST_ASSERT_NE_(log.str().find("not-a-pattern"), std::string::npos, "Log should contain the discarded input line at some point");
 }
@@ -107,8 +111,11 @@ TEST(ignores_trailing_newline) {
     std::istringstream input("abc\n");
     int dummy = 0;
     mock_handler mock;
-    trace_parser<int>::pattern_list patterns = {{"abc", mock}};
-    trace_parser<int>::parse(input, patterns, log, dummy);
+    trace_parser<int>()
+        .add_pattern("abc", mock)
+        .log_to(log)
+        .set_target(dummy)
+        .parse(input);
     TEST_ASSERT_EQ_(log.str(), "", "Parser should not log anything when all input parses successfully");
     TEST_ASSERT_EQ_(mock.call_count(), 1, "Handler should have been called once");
     TEST_ASSERT_EQ_(&std::get<0>(mock.args()), &dummy, "Target passed to parser should be forwarded to handler");
@@ -123,12 +130,13 @@ TEST(match_multiple_patterns) {
     mock_handler mockOne(ctx);
     mock_handler mockTwo(ctx);
     mock_handler mockThree(ctx);
-    trace_parser<int>::pattern_list patterns = {
-        {"one", mockOne},
-        {"two", mockTwo},
-        {"three", mockThree},
-    };
-    trace_parser<int>::parse(input, patterns, log, dummy);
+    trace_parser<int>()
+        .add_pattern("one", mockOne)
+        .add_pattern("two", mockTwo)
+        .add_pattern("three", mockThree)
+        .log_to(log)
+        .set_target(dummy)
+        .parse(input);
     TEST_ASSERT_EQ_(log.str(), "", "Parser should not log anything when all input parses successfully");
     TEST_ASSERT_EQ(mockOne.call_count(), 2);
     TEST_ASSERT_EQ(mockTwo.call_count(), 1);
@@ -143,8 +151,11 @@ TEST(matchers_in_pattern_are_forwarded_to_handler) {
     std::istringstream input("hello, 42");
     int dummy = 0;
     mock_handler mock;
-    trace_parser<int>::pattern_list patterns = {{"%s , %d", mock}};
-    trace_parser<int>::parse(input, patterns, log, dummy);
+    trace_parser<int>()
+        .add_pattern("%s , %d", mock)
+        .log_to(log)
+        .set_target(dummy)
+        .parse(input);
     TEST_ASSERT_EQ_(log.str(), "", "Parser should not log anything when all input parses successfully");
     TEST_ASSERT_EQ_(mock.call_count(), 1, "Handler should have been called once");
     TEST_ASSERT_EQ(std::get<1>(mock.args()).size(), 2);
@@ -157,8 +168,11 @@ TEST(wildcard_pattern_matches_anything) {
     std::istringstream input("abc\n\n42");
     int dummy = 0;
     mock_handler mock;
-    trace_parser<int>::pattern_list patterns = {{"%S", mock}};
-    trace_parser<int>::parse(input, patterns, log, dummy);
+    trace_parser<int>()
+        .add_pattern("%S", mock)
+        .log_to(log)
+        .set_target(dummy)
+        .parse(input);
     TEST_ASSERT_EQ_(log.str(), "", "Parser should not log anything when all input parses successfully");
     TEST_ASSERT_EQ(mock.call_count(), 3);
     TEST_ASSERT_EQ(std::get<1>(mock.args(0)).size(), 1);
@@ -175,15 +189,27 @@ TEST(first_matching_pattern_is_used) {
     int dummy = 0;
     mock_handler realMock;
     mock_handler unusedMock;
-    trace_parser<int>::pattern_list patterns = {
-        {"something else", unusedMock},
-        {"1 %s 3 %d 5", realMock},
-        {"1 2 %d %d 5", unusedMock},
-        {"1 2 3 4 5", unusedMock},
-        {"1 %s 3 %d 5", unusedMock},
-    };
-    trace_parser<int>::parse(input, patterns, log, dummy);
+    trace_parser<int>()
+        .add_pattern("something else", unusedMock)
+        .add_pattern("1 %s 3 %d 5", realMock)
+        .add_pattern("1 2 %d %d 5", unusedMock)
+        .add_pattern("1 2 3 4 5", unusedMock)
+        .add_pattern("1 %s 3 %d 5", unusedMock)
+        .log_to(log)
+        .set_target(dummy)
+        .parse(input);
     TEST_ASSERT_EQ_(log.str(), "", "Parser should not log anything when all input parses successfully");
     TEST_ASSERT_EQ_(realMock.call_count(), 1, "Handler of first matching pattern should have been called");
     TEST_ASSERT_EQ_(unusedMock.call_count(), 0, "Handlers of other patterns should not have been called");
+}
+
+TEST(fails_silently_when_logger_is_missing) {
+    std::istringstream input("not-a-pattern");
+    int dummy = 0;
+    trace_parser<int>().set_target(dummy).parse(input);
+}
+
+TEST(throws_when_target_is_missing) {
+    std::istringstream input("not-a-pattern");
+    TEST_ASSERT_THROW(trace_parser<int>().parse(input), std::invalid_argument);
 }
