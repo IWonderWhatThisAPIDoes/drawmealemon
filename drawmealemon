@@ -13,10 +13,10 @@ HAS_GRAMMAR=0
 GRAMMAR=
 # Becomes the list of tokens sent to the parser
 TOKENS=0
-# Becomes the target flag to be forwarded to the renderer once set
-TARGET=
+# Becomes 1 once a target is set
+HAS_TARGET=0
 # Contains the options to be forwarded to the renderer
-OPTIONS=
+OPTIONS=()
 
 # Directory containing this script
 SCRIPT_DIR=`dirname $0`
@@ -43,20 +43,21 @@ do
             ;;
         -t* | --target)
             # Target can only be set once
-            if [ -n "$TARGET" ]
+            if (( HAS_TARGET ))
             then
                 echo "--target used more than once" >&2
                 exit 1
             fi
+            HAS_TARGET=1
             # Get the target from the argument (short variant)
             # or read it from the next
             if [[ "$1" == -t* ]] && (( ${#1} > 2 ))
             then
-                TARGET="$1"
+                OPTIONS+=("$1")
             elif (( $# > 1 )) && [[ "$2" != -* ]]
             then
                 shift
-                TARGET="-t$1"
+                OPTIONS+=("-t$1")
             else
                 echo "Missing target name after --target" >&2
                 exit 1
@@ -67,11 +68,11 @@ do
             # or read it from the next
             if [[ "$1" == -o* ]] && (( ${#1} > 2 ))
             then
-                OPTIONS="$OPTIONS $1"
+                OPTIONS+=("$1")
             elif (( $# > 1 )) && [[ "$2" != -* ]]
             then
                 shift
-                OPTIONS="$OPTIONS -o$1"
+                OPTIONS+=("-o$1")
             else
                 echo "Missing option value after --option" >&2
                 exit 1
@@ -128,4 +129,4 @@ sed -e "s;%parser%;$LEM/$BASENAME;g" -e "s;%tokens%;$TOKENS;g" src/wrapper/main.
 "$CC" "$OUT"/wrapper.c -o "$OUT"/wrapper &&
 
 # Run the parser and draw its outputs
-"$OUT"/wrapper | "$OUT"/render $TARGET $OPTIONS
+"$OUT"/wrapper | "$OUT"/render "${OPTIONS[@]}"
