@@ -149,6 +149,25 @@ public:
      */
     explicit ascii_fragment_table(std::ostream& ostr);
     virtual ~ascii_fragment_table() {}
+
+    /**
+     * Sets width of the input column of the visualization
+     * 
+     * Defaults to the minimum value supported by the implementation
+     * 
+     * @param width Width of the input column. Must be at least
+     *              @ref min_input_column_width. Smaller values will be
+     *              clamped up
+     */
+    void input_column_width(size_t width) noexcept;
+    /**
+     * Retrieves the width of the input column
+     * 
+     * Caller must clamp the value in case it is too small
+     * 
+     * @return Width of the input column
+     */
+    size_t input_column_width() const noexcept;
     /**
      * Sets the target stream that the outputs will be rendered into
      * 
@@ -253,6 +272,7 @@ public:
     virtual void syntax_error_label() const = 0;
 private:
     std::ostream* ostr;
+    size_t inputWidth = 0;
 };
 
 }

@@ -9,18 +9,20 @@
 
 namespace dmalem {
 
-static constexpr size_t max_nonterm_width = 10;
-static constexpr size_t max_term_width = 10;
 static constexpr char entry_arrow[] = "-> ";
 static constexpr size_t entry_arrow_length = sizeof(entry_arrow) / sizeof(char) - 1;
-static constexpr size_t input_column_width = entry_arrow_length + std::max(max_term_width + 1, max_nonterm_width + 3);
+static constexpr size_t min_input_column_width = 10;
+
+size_t pure_ascii_fragment_table::clamped_input_column_width() const noexcept {
+    return std::max(input_column_width(), min_input_column_width);
+}
 
 void pure_ascii_fragment_table::column_separator() const {
     stream() << "||";
 }
 
 void pure_ascii_fragment_table::left_column_head() const {
-    stream() << std::right << std::setw(input_column_width) << "INPUT ";
+    stream() << std::right << std::setw(clamped_input_column_width()) << "INPUT ";
 }
 
 void pure_ascii_fragment_table::right_column_head() const {
@@ -58,28 +60,28 @@ void pure_ascii_fragment_table::state(const state_fragment_data& data) const {
 }
 
 void pure_ascii_fragment_table::pull_nonterminal(size_t reduceCount) const {
-    stream() << std::right << std::setw(input_column_width - entry_arrow_length - 1) <<
+    stream() << std::right << std::setw(clamped_input_column_width() - entry_arrow_length - 1) <<
         (reduceCount == 0 ? ",-* " : ",---");
 }
 
 void pure_ascii_fragment_table::bring_token(const std::string_view& name) const {
     stream() << entry_arrow;
-    if (name.length() >= input_column_width - entry_arrow_length)
-        stream() << name.substr(0, input_column_width - entry_arrow_length - 3) << ".. ";
+    if (name.length() >= clamped_input_column_width() - entry_arrow_length)
+        stream() << name.substr(0, clamped_input_column_width() - entry_arrow_length - 3) << ".. ";
     else
-        stream() << std::left << std::setw(input_column_width - entry_arrow_length) << name;
+        stream() << std::left << std::setw(clamped_input_column_width() - entry_arrow_length) << name;
 }
 
 void pure_ascii_fragment_table::shift_token() const {
     stream()
         << std::setw(entry_arrow_length) << ' '
-        << std::setw(input_column_width - entry_arrow_length) << std::setfill('-') << std::left
+        << std::setw(clamped_input_column_width() - entry_arrow_length) << std::setfill('-') << std::left
         << " `"
         << std::setfill(' ');
 }
 
 void pure_ascii_fragment_table::shift_nonterminal() const {
-    stream() << std::right << std::setw(input_column_width - entry_arrow_length - 1) << "`---";
+    stream() << std::right << std::setw(clamped_input_column_width() - entry_arrow_length - 1) << "`---";
 }
 
 void pure_ascii_fragment_table::discard_token() const {
@@ -99,14 +101,14 @@ void pure_ascii_fragment_table::endl() const {
 }
 
 void pure_ascii_fragment_table::empty_left_column() const {
-    stream() << std::setw(input_column_width - entry_arrow_length - 1) << ' ';
+    stream() << std::setw(clamped_input_column_width() - entry_arrow_length - 1) << ' ';
 }
 
 void pure_ascii_fragment_table::nonterminal_name(const std::string_view& name) const {
-    if (name.length() >= input_column_width - entry_arrow_length - 2)
-        stream() << name.substr(0, input_column_width - entry_arrow_length - 4) << ".. ";
+    if (name.length() >= clamped_input_column_width() - entry_arrow_length - 2)
+        stream() << name.substr(0, clamped_input_column_width() - entry_arrow_length - 4) << ".. ";
     else
-        stream() << std::right << std::setw(input_column_width - entry_arrow_length - 2) << name << ' ';
+        stream() << std::right << std::setw(clamped_input_column_width() - entry_arrow_length - 2) << name << ' ';
 }
 
 void pure_ascii_fragment_table::reduce_rule_label(const std::string_view& rule) const {

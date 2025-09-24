@@ -34,6 +34,13 @@ public:
     void reduce_rule_label(const std::string_view& rule) const override;
     void termination_label(parser_termination_cause cause) const override;
     void syntax_error_label() const override;
+    /**
+     * Retrieves the width of the input column, clamped to the minimum value
+     * if necessary
+     * 
+     * @return Width of the input column
+     */
+    size_t clamped_input_column_width() const noexcept;
 };
 
 }

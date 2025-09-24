@@ -37,4 +37,13 @@ std::ostream& ascii_fragment_table::stream() const {
     return *ostr;
 }
 
+void ascii_fragment_table::input_column_width(size_t width) noexcept {
+    inputWidth = width;
+}
+
+size_t ascii_fragment_table::input_column_width() const noexcept {
+    // Clamp the width to the minimum if it is too small
+    return inputWidth;
+}
+
 }

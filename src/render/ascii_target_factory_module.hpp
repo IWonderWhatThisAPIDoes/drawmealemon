@@ -34,6 +34,7 @@ public:
     void set_options(const std::vector<std::string>& options) override;
 private:
     std::ostream* ostr;
+    size_t inputColumnWidth = 0;
 };
 
 }

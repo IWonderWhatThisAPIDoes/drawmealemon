@@ -25,6 +25,7 @@ TEST(endl) {
 TEST(input_token_is_printed) {
     std::ostringstream ostr;
     pure_ascii_fragment_table table(ostr);
+    table.input_column_width(20);
     table.bring_token("Hello");
     table.bring_token("World");
     TEST_ASSERT_NE(ostr.str().find("Hello"), std::string::npos);
@@ -34,6 +35,7 @@ TEST(input_token_is_printed) {
 TEST(nonterminal_is_printed) {
     std::ostringstream ostr;
     pure_ascii_fragment_table table(ostr);
+    table.input_column_width(20);
     table.nonterminal_name("hello");
     table.nonterminal_name("world");
     TEST_ASSERT_NE(ostr.str().find("hello"), std::string::npos);
@@ -65,9 +67,10 @@ TEST(left_margins_have_equal_length) {
     TEST_ASSERT_EQ(empty.length(), discard.length());
 }
 
-TEST(left_columns_have_equal_length) {
+void assert_left_columns_have_equal_length(size_t inputWidth) {
     std::ostringstream ostr;
     pure_ascii_fragment_table table(ostr);
+    table.input_column_width(inputWidth);
     // Empty left column
     table.empty_left_column();
     const auto empty = ostr.str();
@@ -99,9 +102,18 @@ TEST(left_columns_have_equal_length) {
     TEST_ASSERT_EQ(empty.length(), shift.length());
 }
 
-TEST(left_double_columns_have_equal_length) {
+TEST(left_columns_have_equal_length_wide) {
+    assert_left_columns_have_equal_length(20);
+}
+
+TEST(left_columns_have_equal_length_narrow) {
+    assert_left_columns_have_equal_length(0);
+}
+
+void assert_left_double_columns_have_equal_length(size_t inputWidth) {
     std::ostringstream ostr;
     pure_ascii_fragment_table table(ostr);
+    table.input_column_width(inputWidth);
     // Empty margin and column for reference
     table.empty_left_margin();
     table.empty_left_column();
@@ -127,6 +139,23 @@ TEST(left_double_columns_have_equal_length) {
     TEST_ASSERT_EQ(empty.length(), head.length());
     TEST_ASSERT_EQ(empty.length(), longn.length());
     TEST_ASSERT_EQ(empty.length(), shift.length());
+}
+
+TEST(left_double_columns_have_equal_length_wide) {
+    assert_left_double_columns_have_equal_length(20);
+}
+
+TEST(left_double_columns_have_equal_length_narrow) {
+    assert_left_double_columns_have_equal_length(0);
+}
+
+TEST(left_column_has_requested_width) {
+    std::ostringstream ostr;
+    pure_ascii_fragment_table table(ostr);
+    table.input_column_width(23);
+    table.empty_left_margin();
+    table.empty_left_column();
+    TEST_ASSERT_EQ(ostr.str().length(), 23);
 }
 
 TEST(states_have_equal_length) {
