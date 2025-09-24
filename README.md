@@ -61,4 +61,13 @@ A handy tool for debugging grammars, or just exploring how the parser generator 
 | Flag           | Description           |
 |----------------|-----------------------|
 | `-h, --help`   | Print the usage and exit |
-| `-t, --target` | Specify the output format. Currently, only the `ascii` format is supported, which outputs an ASCII art of the parser's execution. |
+| `-t, --target` | Specify the output format (see below) |
+| `-o, --option` | Options that further customize the output format (see below) |
+
+### Output Formats
+
+`-t ascii` - Outputs an ASCII art of the parser's execution.
+
+| Option      | Description |
+|-------------|-------------|
+| `-o iw=<n>` | Sets the width (in characters) of the left (input) column |

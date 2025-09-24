@@ -15,6 +15,8 @@ GRAMMAR=
 TOKENS=0
 # Becomes the target flag to be forwarded to the renderer once set
 TARGET=
+# Contains the options to be forwarded to the renderer
+OPTIONS=
 
 # Directory containing this script
 SCRIPT_DIR=`dirname $0`
@@ -28,6 +30,7 @@ print_help() {
     echo "Options:"
     echo "  -h, --help       Print this documentation"
     echo "  -t, --target     Specify the output format"
+    echo "  -o, --option     Parameters specific to output format"
 }
 
 # Parse the arguments
@@ -56,6 +59,21 @@ do
                 TARGET="-t$1"
             else
                 echo "Missing target name after --target" >&2
+                exit 1
+            fi
+            ;;
+        -o* | --option)
+            # Get the option from the argument (short variant)
+            # or read it from the next
+            if [[ "$1" == -o* ]] && (( ${#1} > 2 ))
+            then
+                OPTIONS="$OPTIONS $1"
+            elif (( $# > 1 )) && [[ "$2" != -* ]]
+            then
+                shift
+                OPTIONS="$OPTIONS -o$1"
+            else
+                echo "Missing option value after --option" >&2
                 exit 1
             fi
             ;;
@@ -110,4 +128,4 @@ sed -e "s;%parser%;$LEM/$BASENAME;g" -e "s;%tokens%;$TOKENS;g" src/wrapper/main.
 "$CC" "$OUT"/wrapper.c -o "$OUT"/wrapper &&
 
 # Run the parser and draw its outputs
-"$OUT"/wrapper | "$OUT"/render $TARGET
+"$OUT"/wrapper | "$OUT"/render $TARGET $OPTIONS
