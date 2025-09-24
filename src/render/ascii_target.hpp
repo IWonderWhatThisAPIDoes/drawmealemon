@@ -25,10 +25,12 @@ public:
     /**
      * Constructs an ASCII render target that renders to a stream
      * 
-     * @param ostr The stream for the target to render to.
-     *             Must outlive the target
+     * @param ostr      The stream for the target to render to.
+     *                  Must outlive the target
+     * @param fragments Fragment table that determines what the ASCII art
+     *                  representation will look like
      */
-    ascii_target(std::ostream& ostr);
+    ascii_target(std::ostream& ostr, std::unique_ptr<ascii_fragment_table>&& fragments);
 
     void input_token(const std::string_view& name) override;
     void shift(int nextState) override;

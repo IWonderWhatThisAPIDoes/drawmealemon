@@ -6,15 +6,14 @@
  */
 
 #include "ascii_target.hpp"
-#include "pure_ascii_fragment_table.hpp"
 
 namespace dmalem {
 
-ascii_target::ascii_target(std::ostream& ostr) :
+ascii_target::ascii_target(std::ostream& ostr, std::unique_ptr<ascii_fragment_table>&& fragments) :
     ostr(&ostr),
-    fragments(std::make_unique<pure_ascii_fragment_table>())
+    fragments(std::move(fragments))
 {
-    fragments->stream(ostr);
+    this->fragments->stream(ostr);
     header();
     stackContents.push_back({.firstLine = lineIndex, .stateId = 0});
     blank_line();
