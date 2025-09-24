@@ -105,7 +105,7 @@ void pure_ascii_fragment_table::empty_left_column() const {
 }
 
 void pure_ascii_fragment_table::nonterminal_name(const std::string_view& name) const {
-    if (name.length() >= clamped_input_column_width() - entry_arrow_length - 2)
+    if (name.length() >= clamped_input_column_width() - entry_arrow_length - 1)
         stream() << name.substr(0, clamped_input_column_width() - entry_arrow_length - 4) << ".. ";
     else
         stream() << std::right << std::setw(clamped_input_column_width() - entry_arrow_length - 2) << name << ' ';

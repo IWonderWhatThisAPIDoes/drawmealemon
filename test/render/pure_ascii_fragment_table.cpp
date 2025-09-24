@@ -207,3 +207,31 @@ TEST(states_have_equal_length) {
     TEST_ASSERT_EQ(state.length(), reduce2.length());
     TEST_ASSERT_EQ(state.length(), discard1.length());
 }
+
+TEST(token_names_are_shortened_if_necessary) {
+    std::ostringstream ostr;
+    pure_ascii_fragment_table table(ostr);
+    table.bring_token("Hello");
+    table.bring_token("NHello");
+    table.bring_token("NNHello");
+    table.bring_token("NNNHello");
+    table.bring_token("NNNNHello");
+    auto output = ostr.str();
+    TEST_ASSERT_NE(output.find("Hello"), std::string::npos);
+    TEST_ASSERT_NE(output.find("He.."), std::string::npos);
+    TEST_ASSERT_EQ_(output.find("Hel.."), std::string::npos, "Token name was needlessly shortened");
+}
+
+TEST(nonterminal_names_are_shortened_if_necessary) {
+    std::ostringstream ostr;
+    pure_ascii_fragment_table table(ostr);
+    table.nonterminal_name("world");
+    table.nonterminal_name("mworld");
+    table.nonterminal_name("mmworld");
+    table.nonterminal_name("mmmworld");
+    table.nonterminal_name("mmmmworld");
+    auto output = ostr.str();
+    TEST_ASSERT_NE(output.find("world"), std::string::npos);
+    TEST_ASSERT_NE(output.find("wo.."), std::string::npos);
+    TEST_ASSERT_EQ_(output.find("wor.."), std::string::npos, "Nonterminal name was needlessly shortened");
+}
