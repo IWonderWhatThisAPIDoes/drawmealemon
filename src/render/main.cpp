@@ -4,7 +4,6 @@
  * Entry point of the renderer module
  */
 
-#include <memory>
 #include <iostream>
 #include "argument_parser.hpp"
 #include "default_target_factory.hpp"
